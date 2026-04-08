@@ -1,0 +1,14 @@
+{
+  "name": "claude-code-lab-coach",
+  "owner": {
+    "name": "Gleb Kalinin",
+    "url": "https://github.com/glebis"
+  },
+  "plugins": [
+    {
+      "name": "lab-coach",
+      "source": "./lab-coach",
+      "description": "Personal trainer between Claude Code Lab meetings — profile, curriculum-driven homework, session review"
+    }
+  ]
+}

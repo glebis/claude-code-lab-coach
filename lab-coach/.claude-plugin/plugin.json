@@ -1,0 +1,10 @@
+{
+  "name": "lab-coach",
+  "version": "0.1.0",
+  "description": "Personal trainer between Claude Code Lab meetings. Maintains an Obsidian-compatible participant profile, generates homework aligned with the actual lab curriculum fetched from a remote manifest, and audits Claude Code sessions with coaching-style feedback.",
+  "author": {
+    "name": "Gleb Kalinin",
+    "url": "https://github.com/glebis"
+  },
+  "homepage": "https://github.com/glebis/claude-code-lab-coach"
+}
