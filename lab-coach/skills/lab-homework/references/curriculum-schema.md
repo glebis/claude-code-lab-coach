@@ -1,61 +1,40 @@
-# Curriculum Manifest Schema
+# Curriculum Manifest Schema (v2)
 
-The `lab-homework` skill fetches a **curriculum manifest** — a JSON file hosted on agency-docs that describes the current cohort's program. This is the contract.
+The `lab-homework` skill fetches a **curriculum manifest** from:
 
-## Hosting
+    https://agency-lab.glebkalinin.com/api/curriculum/<cohort>.json
 
-Suggested canonical path:
+No auth. Cache-Control: `public, max-age=60`. The endpoint reads MDX files from agency-docs at request time, so editing a meeting's MDX is immediately reflected.
 
-```
-https://<agency-docs-domain>/api/curriculum/<cohort-slug>.json
-```
+## Cohort slug
 
-Examples:
-- `https://docs.aimindset.ai/api/curriculum/claude-code-internal-03.json`
-- `https://docs.aimindset.ai/api/curriculum/claude-code-internal-04.json`
+Use the public route slug, not the internal content-directory name:
 
-The URL is passed to the skill via the `CLAUDE_LAB_CURRICULUM_URL` env var or the vault config file. One cohort = one URL.
+| Public slug (use this) | Content dir (internal) |
+|---|---|
+| `claude-code-lab-02` | `claude-code-internal-02` |
+| `claude-code-lab-03` | `claude-code-internal-03` |
+| `claude-code-lab-04` | `claude-code-internal-04` |
+| `claude-code-lab-05` | `claude-code-internal-05` |
 
-Implementation tip for agency-docs (Next.js / Fumadocs): expose it as a route handler in `app/api/curriculum/[cohort]/route.ts` that reads the cohort's MDX files and returns this JSON. That way editing the presentations automatically updates the manifest — no duplication.
-
-## Schema
+## Response shape
 
 ```json
 {
-  "cohort": "claude-code-internal-03",
-  "title": "Claude Code Lab — Cohort 03",
-  "language": "en",
-  "updated_at": "2026-04-08",
-  "chat_url": "https://t.me/+aENH1IqZJGY0ODFi",
+  "schema_version": 2,
+  "cohort": "claude-code-lab-03",
+  "title": "Claude Code Lab 03",
+  "language": "ru",
+  "updated_at": "2026-04-18",
   "meetings": [
     {
       "number": "01",
-      "title": "Introduction and first steps",
-      "date": "2026-02-17",
-      "topics": [
-        "Three Claude Code modes (Normal, Plan, AutoAccept)",
-        "Basic commands",
-        "Creating CLAUDE.md"
-      ],
-      "transcript_url": "https://gist.githubusercontent.com/glebis/0a9135c5729725774edfaaf7082f3711/raw/meeting-01.md",
-      "slides_url": "https://docs.aimindset.ai/docs/claude-code-internal-03/meetings/01",
-      "homework_examples": [
-        "Try all three modes on one task and write down the differences",
-        "Set up your first CLAUDE.md"
-      ]
-    },
-    {
-      "number": "03",
-      "title": "Prompt engineering",
+      "title": "Встреча 01: Знакомство и введение",
+      "description": "Введение в Claude Code Lab...",
       "date": "2026-03-03",
-      "topics": [
-        "Context management",
-        "Structured prompts",
-        "Using AskUserQuestion"
-      ],
-      "transcript_url": "https://gist.githubusercontent.com/glebis/ca1d2409e93f228b2ec314105b336001/raw/meeting-03.md",
-      "slides_url": "https://docs.aimindset.ai/docs/claude-code-internal-03/meetings/03",
-      "homework_examples": []
+      "slides_url": "https://agency-lab.glebkalinin.com/claude-code-lab-03/20260303-presentation.html",
+      "video_url": "https://www.youtube.com/watch?v=0y7AGq9foBM",
+      "summary_md": "## Claude Code Lab 03 — Meeting 01...\n\n### О ведущем\n..."
     }
   ]
 }
@@ -63,46 +42,51 @@ Implementation tip for agency-docs (Next.js / Fumadocs): expose it as a route ha
 
 ## Field reference
 
-| Field | Required | Notes |
+| Field | Type | Notes |
 |---|---|---|
-| `cohort` | yes | Slug, matches directory name in agency-docs |
-| `title` | yes | Human-readable cohort name |
-| `language` | yes | `"en"` or `"ru"` — used as a hint for homework language if the user hasn't specified |
-| `updated_at` | yes | ISO date. Skill warns if older than 7 days |
-| `chat_url` | no | Optional Telegram/Discord link for participants |
-| `meetings[]` | yes | Array, sorted by number |
-| `meetings[].number` | yes | Zero-padded string ("01", "03", "11") |
-| `meetings[].title` | yes | Short human title |
-| `meetings[].date` | yes | ISO date of the meeting |
-| `meetings[].topics[]` | yes | 2-5 bullet points. These seed the homework generator's understanding of what was covered — keep them concrete |
-| `meetings[].transcript_url` | yes | Raw-text URL (GitHub Gist, agency-docs raw endpoint, or any public markdown). Must be fetchable via `WebFetch` |
-| `meetings[].slides_url` | no | Human-facing link, shown to the user for reference |
-| `meetings[].homework_examples[]` | no | Optional seed ideas. The skill treats these as inspiration, not a checklist — the rubric still applies |
+| `schema_version` | integer | Must be `2`. Skill refuses unknown versions. |
+| `cohort` | string | Echoes the URL slug. |
+| `title` | string | From the cohort's `meta.json`. |
+| `language` | `"ru"` or `"en"` | Hint for homework output language. |
+| `updated_at` | ISO date | Newest mtime across the cohort's meeting MDX files. |
+| `meetings[]` | array | Sorted ascending by `number`. |
+| `meetings[].number` | string | Zero-padded from filename (`"01"`, `"03"`, `"11"`). |
+| `meetings[].title` | string | From frontmatter `title`. |
+| `meetings[].description` | string \| null | From frontmatter `description`. |
+| `meetings[].date` | ISO date \| null | Labelled `Дата:` / `Date:` in MDX body, else first ISO date in the opening 500 chars. |
+| `meetings[].slides_url` | URL \| null | Markdown link under `/<cohort>/...presentation.html`, made absolute. |
+| `meetings[].video_url` | URL \| null | First YouTube link (watch, embed, or youtu.be). |
+| `meetings[].summary_md` | string | MDX body with frontmatter / iframes / JSX components stripped. |
 
-## Versioning
+## Errors
 
-The skill doesn't do strict schema versioning yet. If the schema evolves, add a `schema_version: 2` field at the top level and update this document. For now, additive changes are safe — the skill ignores unknown fields.
+| Status | Body | When |
+|---|---|---|
+| 200 | manifest JSON | cohort exists |
+| 404 | `{ "error": "cohort_not_found", "known": [...] }` | unknown cohort |
+| 5xx | Next.js default | implementation bug — retry or report |
 
-## Minimal example for testing
+## Minimal local test fixture
 
-If you want to test the skill without hosting anything yet, save this as `<vault>/.cache/curriculum.json` manually:
+Drop this at `<vault>/.cache/curriculum-test.json` and point the skill at cohort `test` (requires a local override; not recommended for normal use):
 
 ```json
 {
+  "schema_version": 2,
   "cohort": "test",
   "title": "Test cohort",
   "language": "en",
-  "updated_at": "2026-04-08",
+  "updated_at": "2026-04-18",
   "meetings": [
     {
       "number": "01",
       "title": "Test meeting",
-      "date": "2026-04-08",
-      "topics": ["Testing the skill"],
-      "transcript_url": "https://gist.githubusercontent.com/glebis/0a9135c5729725774edfaaf7082f3711/raw/meeting-01.md"
+      "description": null,
+      "date": "2026-04-18",
+      "slides_url": null,
+      "video_url": null,
+      "summary_md": "Test summary."
     }
   ]
 }
 ```
-
-The skill will use the local cache and skip the remote fetch.
