@@ -4,6 +4,10 @@ The `lab-homework` skill fetches a **curriculum manifest** from:
 
     https://agency-lab.glebkalinin.com/api/curriculum/<cohort>.json
 
+An optional per-meeting drill-down is also available:
+
+    https://agency-lab.glebkalinin.com/api/curriculum/<cohort>/<meeting>.json
+
 No auth. Cache-Control: `public, max-age=60`. The endpoint reads MDX files from agency-docs at request time, so editing a meeting's MDX is immediately reflected.
 
 ## Cohort slug
@@ -56,7 +60,16 @@ Use the public route slug, not the internal content-directory name:
 | `meetings[].date` | ISO date \| null | Labelled `Дата:` / `Date:` in MDX body, else first ISO date in the opening 500 chars. |
 | `meetings[].slides_url` | URL \| null | Markdown link under `/<cohort>/...presentation.html`, made absolute. |
 | `meetings[].video_url` | URL \| null | First YouTube link (watch, embed, or youtu.be). |
-| `meetings[].summary_md` | string | MDX body with frontmatter / iframes / JSX components stripped. |
+| `meetings[].summary_md` | string | MDX body with frontmatter / iframes / JSX components stripped. Empty or stub text for upcoming meetings. |
+| `meetings[].has_content` | boolean | `true` when `summary_md` is real content; `false` for pre-event stubs. Skill should surface "(upcoming)" in meeting pickers and avoid grounding a homework task in stub text. |
+
+## Per-meeting endpoint
+
+`GET /api/curriculum/<cohort>/<meeting>.json` returns a single meeting object with the same fields as `meetings[0]` above.
+
+- `<meeting>` is the zero-padded number (e.g. `03`).
+- 200 on success, 404 with `{ "error": "meeting_not_found", "cohort": "...", "meeting": "..." }` otherwise.
+- Use this when you already know which meeting you want and don't need the full cohort list.
 
 ## Errors
 
@@ -85,7 +98,8 @@ Drop this at `<vault>/.cache/curriculum-test.json` and point the skill at cohort
       "date": "2026-04-18",
       "slides_url": null,
       "video_url": null,
-      "summary_md": "Test summary."
+      "summary_md": "Test summary.",
+      "has_content": false
     }
   ]
 }
