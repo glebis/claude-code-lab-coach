@@ -29,7 +29,22 @@ https://agency-lab.glebkalinin.com/api/curriculum/<cohort>.json
 
 ### 2. Meeting content
 
-Each meeting in the manifest has a `summary_md` field — the already-synthesized record of what was covered. This is the skill's source of truth for meeting content. **Do not** fetch a separate transcript. Do not invent content.
+Each meeting in the manifest has two fields the skill uses:
+
+- `summary_md` — the already-synthesized record of what was covered in that meeting.
+- `has_content: boolean` — `true` when `summary_md` is real content, `false` when it's a pre-event stub (e.g. "Summary will be added after the session").
+
+**If `has_content` is true:** use `summary_md` as the source of truth for meeting content. **Do not** fetch a separate transcript. Do not invent content.
+
+**If `has_content` is false** (meeting hasn't happened yet, or notes weren't published): don't fabricate. See "Handling future meetings" below.
+
+**Optional per-meeting endpoint** — if you need the full meeting record without re-fetching the whole cohort:
+
+```
+https://agency-lab.glebkalinin.com/api/curriculum/<cohort>/<meeting>.json
+```
+
+Returns the same meeting object (or 404 with `{ "error": "meeting_not_found" }`).
 
 ### 3. Personal vault
 
@@ -46,12 +61,13 @@ If the vault is missing or empty, point to `lab-context` first. Don't invent per
 
 1. **Resolve cohort** — read `<vault>/.config.md` for `cohort:`. If missing, ask via `AskUserQuestion` (default `claude-code-lab-04`) and save it.
 2. **Fetch or reuse the curriculum manifest** (see caching rules above).
-3. **Ask which meeting** via `AskUserQuestion`, populated from `manifest.meetings[]` (number + title). Single-select.
+3. **Ask which meeting** via `AskUserQuestion`, populated from `manifest.meetings[]` (number + title). Mark stubs visibly — append " (upcoming)" or " (not yet covered)" to titles where `has_content` is false. Single-select.
 4. **Ask parameters** via a second `AskUserQuestion`:
    - **"How much time do you have?"** — 30 min / 1 hour / evening / weekend
    - **"Where should this land?"** — active project / playground / either
 5. **Read the vault** (profile, goals, tools-learned, projects, existing homework).
 6. **Generate the assignment** using the pedagogical rubric below, grounded in the selected meeting's `summary_md` so the task matches topics the user actually saw.
+   - If `has_content: false` (selected meeting hasn't been covered yet), follow "Handling future meetings" below instead of improvising from the stub.
 7. **Write the file** to `<vault>/homework/YYYY-MM-DD-meeting-<NN>-<slug>.md`.
 8. **Summarise briefly** in the chat: one sentence about the task and the reflection question. Don't dump the whole file.
 
@@ -105,6 +121,16 @@ status: new
 ## Reflection
 <one question worth asking yourself after you finish>
 ````
+
+## Handling future meetings
+
+When the selected meeting has `has_content: false` (e.g. the participant wants pre-work before meeting 05 that hasn't happened yet), the manifest's `summary_md` is a stub and can't ground the task. Options, in order of preference:
+
+1. **Use the title + description.** The meeting frontmatter usually encodes intent (e.g. `Meeting 05: Subagents & Research (theory + demos)`). If that's enough to design a *preparatory* task — one that warms up the topic without assuming content the participant hasn't seen — go ahead, but tell the user: "This meeting hasn't happened yet. I'll design a prep task based on the planned topic (<title>). Confirm before I write."
+2. **Ask the user to describe the planned topic in one sentence** if the title is too vague. Use their sentence as the grounding context.
+3. **Redirect to a completed meeting** if the participant is unsure what they want. Show only `has_content: true` meetings and ask again.
+
+Never silently generate a task using fabricated meeting content. Always flag that the selected meeting is upcoming.
 
 ## Rules
 
