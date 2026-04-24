@@ -83,13 +83,20 @@ Use **`AskUserQuestion`** for structured questions — faster and cleaner than a
 1. **Vault path.** Ask in plain text, suggest the default `~/claude-lab-vault/`. Confirm it's a subfolder.
 2. **Create the directory** and four starter files with empty frontmatter.
 3. **Structured questions** via `AskUserQuestion`:
+   - **"Which lab cohort are you in?"** (singleSelect): claude-code-lab-05 (**default**) / claude-code-lab-04 / claude-code-lab-03 / claude-code-lab-02
    - **"What's your role?"** (singleSelect): developer / designer / product / researcher / founder / other
    - **"How often do you use Claude Code?"** (singleSelect): just started / occasionally / daily / I build my own skills and MCPs
    - **"Primary language or stack?"** (singleSelect): Python / TypeScript / Go / Rust / I don't code / other
    - **"What do you want to get out of the lab?"** (multiSelect): automate routine / build my own product / master MCP and Skills / understand subagents / clean up my workflow / learn to deploy
    - **"Do you have an active project where you can apply practice?"** (singleSelect): yes, work / yes, personal / no, need a playground
 4. **Free text** as separate messages: name, one-line project description (if any), project path.
-5. Write everything into the matching files. Keep it under 3 minutes — first-run should be painless.
+5. **Save cohort to `.config.md`** in the vault root:
+   ```markdown
+   cohort: <selected-cohort-slug>
+   curriculum_url: https://agency-lab.glebkalinin.com/api/curriculum/<selected-cohort-slug>.json
+   ```
+   This file is read by `lab-homework` to resolve the curriculum API URL. If `.config.md` already exists, update only the `cohort:` and `curriculum_url:` lines — preserve other fields.
+6. Write everything into the matching files. Keep it under 3 minutes — first-run should be painless.
 
 ### Update
 On "update X" / "add Y" — read the file, preserve existing data, change only what was asked. Update `updated:` in frontmatter.

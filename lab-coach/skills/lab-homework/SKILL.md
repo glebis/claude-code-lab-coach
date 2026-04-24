@@ -21,7 +21,7 @@ Fetched from the public API:
 https://agency-lab.glebkalinin.com/api/curriculum/<cohort>.json
 ```
 
-- Cohort slug stored in `<vault>/.config.md` under `cohort:`. On first run, ask the user via `AskUserQuestion` — options: `claude-code-lab-04` (**default**), `claude-code-lab-03`, `claude-code-lab-05`, `claude-code-lab-02`.
+- Cohort slug stored in `<vault>/.config.md` under `cohort:`. On first run, ask the user via `AskUserQuestion` — options: `claude-code-lab-05` (**default**), `claude-code-lab-04`, `claude-code-lab-03`, `claude-code-lab-02`.
 - **Cache:** write the response to `<vault>/.cache/curriculum-<cohort>.json` with an added top-level `_fetched_at` ISO timestamp. Reuse the cache if younger than 24h.
 - **Refresh triggers:** user phrases "refresh curriculum", "update curriculum", "pull latest", "обнови программу", "обнови курс" force a re-fetch. If the cache is older than 7 days, offer a refresh before continuing.
 - **Schema:** `schema_version: 2`. See `references/curriculum-schema.md`. If `schema_version` is missing or unknown, refuse and tell the user to update the skill.
@@ -66,7 +66,7 @@ Read `<vault>/sandbox/` if it exists. These files provide a simulated work envir
 
 ## Workflow
 
-1. **Resolve cohort** — read `<vault>/.config.md` for `cohort:`. If missing, ask via `AskUserQuestion` (default `claude-code-lab-04`) and save it.
+1. **Resolve cohort** — read `<vault>/.config.md` for `cohort:`. If missing, ask via `AskUserQuestion` (default `claude-code-lab-05`) and save it.
 2. **Fetch or reuse the curriculum manifest** (see caching rules above).
 3. **Ask which meeting** via `AskUserQuestion`, populated from `manifest.meetings[]` (number + title). Mark stubs visibly — append " (upcoming)" or " (not yet covered)" to titles where `has_content` is false. Single-select.
 4. **Ask parameters** via a second `AskUserQuestion`:
